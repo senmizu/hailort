@@ -14,6 +14,13 @@ RUN apt-get -qq update \
 
 COPY . /source
 
+# Relax numpy dependency in HailoRT Python binding requirements
+# Example: numpy==1.23.3 -> numpy
+RUN sed -i -E 's/^numpy([<>=!~].*)?$/numpy/' \
+    /source/hailort/libhailort/bindings/python/platform/requirements.txt \
+    && grep -n '^numpy' \
+    /source/hailort/libhailort/bindings/python/platform/requirements.txt
+
 # Build and install HailoRT
 RUN cd /source && \
     cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Release && \
