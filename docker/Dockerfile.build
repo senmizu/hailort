@@ -14,12 +14,30 @@ RUN apt-get -qq update \
 
 COPY . /source
 
-# Relax numpy dependency in HailoRT Python binding requirements
-# Example: numpy==1.23.3 -> numpy
-RUN sed -i -E 's/^numpy([<>=!~].*)?$/numpy/' \
-    /source/hailort/libhailort/bindings/python/platform/requirements.txt \
-    && grep -n '^numpy' \
-    /source/hailort/libhailort/bindings/python/platform/requirements.txt
+# Relax numpy dependency in HailoRT Python binding
+# requirements.txt:
+#   numpy==1.23.3 / numpy<2 / numpy >= xxx -> numpy
+# setup.py:
+#   "numpy<2", / "numpy==1.23.3", / "numpy", -> "numpy",
+RUN set -eux; \
+    REQ_FILE="/source/hailort/libhailort/bindings/python/platform/requirements.txt"; \
+    SETUP_FILE="/source/hailort/libhailort/bindings/python/platform/setup.py"; \
+    \
+    echo "Before patch requirements.txt:"; \
+    grep -n -i "numpy" "$REQ_FILE" || true; \
+    \
+    sed -i -E 's/^numpy[[:space:]]*([<>=!~].*)?$/numpy/' "$REQ_FILE"; \
+    \
+    echo "After patch requirements.txt:"; \
+    grep -n -i "numpy" "$REQ_FILE" || true; \
+    \
+    echo "Before patch setup.py:"; \
+    grep -n -i "numpy" "$SETUP_FILE" || true; \
+    \
+    sed -i -E 's/"numpy[[:space:]]*([<>=!~][^"]*)?",/"numpy",/g' "$SETUP_FILE"; \
+    \
+    echo "After patch setup.py:"; \
+    grep -n -i "numpy" "$SETUP_FILE" || true
 
 # Build and install HailoRT
 RUN cd /source && \
